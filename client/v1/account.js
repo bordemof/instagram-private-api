@@ -61,10 +61,20 @@ Account.getById = function (session, id) {
         .setResource('userInfo', {id: id})
         .send()
         .then(function(data) {
-            return new Account(session, data.user)
+            return new Account(session, data)
         })
 };  
 
+// Custom extended method
+Account.getUserInfo = function (session, id) {
+    return new Request(session)
+        .setMethod('GET')
+        .setResource('userInfo', {id: id})
+        .send()
+        .then(function(data) {
+            return data
+        })
+};  
 
 Account.prototype.update = function () {
     var that = this;
