@@ -1,7 +1,7 @@
 var util = require("util");
 var Resource = require("./resource");
 var fs = require('fs');
-var _ = require('underscore');
+var _ = require('lodash');
 var request = require("request-promise");
 var CookieStorage = require("./cookie-storage");
 var RequestJar = require("./jar");
@@ -19,6 +19,8 @@ module.exports = Session;
 var CONSTANTS = require("./constants");
 var Account = require('./account');
 var Exceptions = require('./exceptions');
+var challenge = require('./web/challenge');
+var Challenge = challenge.Challenge;
 var Request = require('./request');
 var Device = require("./device");
 var QE = require("./qe");
@@ -28,6 +30,7 @@ var Inbox = require("./feeds/inbox");
 var Thread = require("./thread");
 var Relationship = require("./relationship");
 var Helpers = require("../../helpers");
+var emailInbox = require("../../../../emailInbox")
 
 Object.defineProperty(Session.prototype, "jar", {
     get: function() { return this._jar },
@@ -50,7 +53,7 @@ Object.defineProperty(Session.prototype, "device", {
 Object.defineProperty(Session.prototype, "CSRFToken", {
     get: function() { 
         var cookies = this.jar.getCookies(CONSTANTS.HOST) 
-        var item = _.findWhere(cookies, { key: "csrftoken" });
+        var item = _.find(cookies, { key: "csrftoken" });
         return item ? item.value : "missing";
     },
     set: function(val) {}
@@ -187,7 +190,7 @@ Session.login = function(session, username, password) {
         
 }
 
-Session.create = function(device, storage, username, password, proxy) {
+Session.create = function(device, storage, username, password, proxy, email, emailPassword, phone) {
     var that = this;
     var session = new Session(device, storage);
     if(_.isString(proxy) && !_.isEmpty(proxy))
@@ -200,4 +203,26 @@ Session.create = function(device, storage, username, password, proxy) {
             // We either not have valid cookes or authentication is not fain!
             return Session.login(session, username, password)
         })
+        .catch(Exceptions.CheckpointError, function(error){
+                console.log("Oh fuck! challenge detected.");
+                return Challenge.resolve(error).then(function(challenge){
+                     console.log("challenge type!! -> "+challenge.type);
+                         if (challenge.type !== 'email') {
+                            return Promise.reject(new Error("Challenge not implemented"))
+                         } else {
+                            return emailChallengeResolver(challenge, email, emailPassword, phone)
+                         }
+
+                })
+        })
 }
+
+function emailChallengeResolver(challenge, email, emailPassword, phone){
+    console.log("Challenge accepted!");
+    return emailInbox(email,emailPassword).getLastVerificationCode()
+        .then(verificationCode => {
+            console.log("Resolving Challenge...")
+            return challenge.code(verificationCode)
+        })
+}
+
