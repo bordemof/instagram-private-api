@@ -41,3 +41,18 @@ UserMediaFeed.prototype.get = function () {
                 })
         });
 };
+
+
+UserMediaFeed.prototype.getFirstPage = function () {
+    var that = this;
+    return this.session.getAccountId()
+        .then(function(id) {
+            var rankToken = Helpers.buildRankToken(id);
+            return new Request(that.session)
+                .setMethod('GET')
+                .setResource('userFeed', {
+                    id: that.accountId,
+                    maxId: that.getCursor(),
+                    rankToken: rankToken
+                })
+};
