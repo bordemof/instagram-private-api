@@ -55,4 +55,7 @@ UserMediaFeed.prototype.getFirstPage = function () {
                     maxId: that.getCursor(),
                     rankToken: rankToken
                 })
+                .send()
+        });
 };
+
