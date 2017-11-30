@@ -19,6 +19,7 @@ var Account = require('../account');
 
 UserMediaFeed.prototype.get = function () {
     var that = this;
+    var results = [];
     return this.session.getAccountId()
         .then(function(id) {
             var rankToken = Helpers.buildRankToken(id);
@@ -31,6 +32,7 @@ UserMediaFeed.prototype.get = function () {
                 })
                 .send()
                 .then(function(data) {
+                    results.push(JSON.stringify(data.items))
                     that.moreAvailable = data.more_available;
                     var lastOne = _.last(data.items);
                     if (that.moreAvailable && lastOne)
@@ -38,10 +40,9 @@ UserMediaFeed.prototype.get = function () {
                     return _.map(data.items, function (medium) {
                         return new Media(that.session, medium);
                     });
-                })
+                }).then(()=> results)
         });
 };
-
 
 UserMediaFeed.prototype.getFirstPage = function () {
     var that = this;
