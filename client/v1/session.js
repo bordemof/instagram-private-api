@@ -210,7 +210,11 @@ Session.create = function(device, storage, username, password, proxy, email, ema
                          if (challenge.type !== 'email') {
                             return Promise.reject(new Error("Challenge not implemented"))
                          } else {
-                            return emailChallengeResolver(challenge, email, emailPassword, phone)
+                            try {
+                                return emailChallengeResolver(challenge, email, emailPassword, phone)
+                            } catch(e){
+                                return Promise.reject(new Error("Email challenged failed"))
+                            }
                          }
 
                 })
