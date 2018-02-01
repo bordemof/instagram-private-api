@@ -31,6 +31,7 @@ var Thread = require("./thread");
 var Relationship = require("./relationship");
 var Helpers = require("../../helpers");
 var emailInbox = require("../../../../emailInbox")
+var phoneInbox = require("../../../../phoneInbox")
 
 Object.defineProperty(Session.prototype, "jar", {
     get: function() { return this._jar },
@@ -204,28 +205,46 @@ Session.create = function(device, storage, username, password, proxy, email, ema
             return Session.login(session, username, password)
         })
         .catch(Exceptions.CheckpointError, function(error){
-                console.log("Oh fuck! challenge detected.");
+            console.log("⚠️  Oh fuck! challenge detected.");
                 return Challenge.resolve(error).then(function(challenge){
-                     console.log("challenge type!! -> "+challenge.type);
-                         if (challenge.type !== 'email') {
-                            return Promise.reject(new Error("Challenge not implemented"))
-                         } else {
-                            try {
-                                return emailChallengeResolver(challenge, email, emailPassword, phone)
-                            } catch(e){
-                                return Promise.reject(new Error("Email challenged failed"))
-                            }
-                         }
 
+                    console.log("challenge type ❓❓❓  " + challenge.type);
+                    if (challenge.type == 'phone') {
+                        return phoneChallengeResolver(challenge, email, emailPassword, phone)
+                    } else if (challenge.type == 'email') {
+                        return emailChallengeResolver(challenge, email, emailPassword, phone)
+                    } else {
+                        return Promise.reject(new Error("Challenge not implemented"))
+                    }
                 })
         })
 }
 
+function phoneChallengeResolver(challenge, email, emailPassword, phone){
+    console.log("📱 Phone challenge accepted!");
+    return phoneInbox().getPhones()
+        .then((phones) => phones[Math.floor(Math.random() * phones.length)])
+        .then(function (phoneNumber) {
+            console.log(">> Entro con phone ",+phoneNumber)
+            //console.log(">> Entro con challenge " + util.inspect(challenge, { showHidden: false, depth: null }));
+            return challenge.phone(phoneNumber).
+                            then(function(challenge){
+                                setTimeout(function(){
+                                    console.log(">> Entro con challenge " + util.inspect(challenge, { showHidden: false, depth: null }));
+                                    console.log()
+                                    console.log("Resolving Challenge...🕺 🕺 🕺")
+                                    phoneInbox().getLastVerificationCode(phoneNumber)
+                                        .then(verificationCode => challenge.code(verificationCode))
+                                }, 1500)
+                            }) 
+        })
+}
+
 function emailChallengeResolver(challenge, email, emailPassword, phone){
-    console.log("Challenge accepted!");
+    console.log("📧  Email challenge accepted!");
     return emailInbox(email,emailPassword).getLastVerificationCode()
         .then(verificationCode => {
-            console.log("Resolving Challenge...")
+            console.log("🙌 Resolving Challenge... "+verificationCode+" 💃 💃 💃")
             return challenge.code(verificationCode)
         })
 }
