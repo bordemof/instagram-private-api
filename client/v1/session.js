@@ -210,7 +210,8 @@ Session.create = function(device, storage, username, password, proxy, email, ema
                     console.log("challenge type ❓❓❓  " + challenge.type);
                     if (challenge.type == 'phone') {
                         return phoneChallengeResolver(challenge, email, emailPassword, phone).then(function (x) {
-                                resolve(session)
+                            resolve(session)
+                        })
                     } else if (challenge.type == 'email') {
                         return new Promise(resolve=>{
                             emailChallengeResolver(challenge, email, emailPassword, phone).then(function (x) {
