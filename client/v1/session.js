@@ -207,17 +207,23 @@ Session.create = function(device, storage, username, password, proxy, email, ema
         .catch(Exceptions.CheckpointError, function(error){
             console.log("⚠️  Oh fuck! challenge detected.");
                 return Challenge.resolve(error).then(function(challenge){
-
                     console.log("challenge type ❓❓❓  " + challenge.type);
                     if (challenge.type == 'phone') {
-                        return phoneChallengeResolver(challenge, email, emailPassword, phone)
+                        return phoneChallengeResolver(challenge, email, emailPassword, phone).then(function (x) {
+                                resolve(session)
                     } else if (challenge.type == 'email') {
-                        return emailChallengeResolver(challenge, email, emailPassword, phone)
+                        return new Promise(resolve=>{
+                            emailChallengeResolver(challenge, email, emailPassword, phone).then(function (x) {
+                                resolve(session)
+                            })
+                        })
+
                     } else {
                         return Promise.reject(new Error("Challenge not implemented"))
                     }
                 })
         })
+
 }
 
 function phoneChallengeResolver(challenge, email, emailPassword, phone){
